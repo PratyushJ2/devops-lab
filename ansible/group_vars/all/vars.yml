@@ -1,4 +1,9 @@
 ---
+# Everything in this file is safe to commit. Real secrets go in
+# secrets.yml instead, which is gitignored (see the .gitignore entry
+# for `secrets.yml`) - copy secrets.yml.example to secrets.yml and fill
+# in real values there, never here.
+
 # --- AWS / ECR ---
 aws_region: "us-east-1"        # must match the region your ECR repo was created in
 ecr_registry: "345760908474.dkr.ecr.us-east-1.amazonaws.com"
@@ -20,6 +25,4 @@ app_health_path: "/health"   # the real app has a genuine /health endpoint now
 node_exporter_version: "1.9.0"
 prometheus_version: "v3.13.1"
 grafana_version: "12.0.2"
-# CHANGE THIS before you ever expose Grafana beyond an SSH tunnel.
-# It's only set here at all so the first login isn't literally admin/admin.
-grafana_admin_password: "change_me_now"
+# grafana_admin_password is intentionally NOT here - see secrets.yml
