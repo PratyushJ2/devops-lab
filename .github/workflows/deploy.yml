@@ -35,6 +35,7 @@ jobs:
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
+          role-skip-session-tagging: true
 
       - name: Log in to ECR
         id: ecr
