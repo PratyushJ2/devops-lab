@@ -13,7 +13,7 @@ Instrumentator().instrument(app).expose(app)
 
 @app.get("/")
 def read_root():
-    return {"message": "Hello from devops-lab! This is a real app, not the nginx placeholder."}
+    return {"message": "Hello from devops-lab!"}
 
 
 @app.get("/health")
