@@ -1,0 +1,25 @@
+---
+# --- AWS / ECR ---
+aws_region: "us-east-1"        # must match the region your ECR repo was created in
+ecr_registry: "345760908474.dkr.ecr.us-east-1.amazonaws.com"
+# ^ get this from: terraform output ecr_repository_url  (everything before the "/repo-name")
+
+# --- nginx ---
+nginx_server_name: "_"      # "_" means "match any hostname" — fine until you have a domain
+app_upstream_port: 8000     # port nginx forwards to on the app container
+
+# --- app container ---
+# Full image URI including the ECR registry. Get the base part from:
+#   terraform output ecr_repository_url
+app_image: "345760908474.dkr.ecr.us-east-1.amazonaws.com/devops-lab-app:latest"
+app_container_name: "app"
+app_container_port: 8000
+app_health_path: "/health"   # the real app has a genuine /health endpoint now
+
+# --- monitoring ---
+node_exporter_version: "1.9.0"
+prometheus_version: "v3.13.1"
+grafana_version: "12.0.2"
+# CHANGE THIS before you ever expose Grafana beyond an SSH tunnel.
+# It's only set here at all so the first login isn't literally admin/admin.
+grafana_admin_password: "change_me_now"

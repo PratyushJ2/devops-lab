@@ -1,0 +1,65 @@
+---
+# All three run with network_mode: host, so they reach each other (and
+# the app container) via plain "localhost" - no Docker bridge network
+# IPs to look up. This is a deliberate simplification: it trades a bit
+# of network isolation for a much easier mental model while you're
+# still learning how these pieces fit together.
+
+- name: Create config directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - /opt/monitoring/prometheus
+    - /opt/monitoring/grafana/provisioning/datasources
+
+- name: Template Prometheus scrape config
+  ansible.builtin.template:
+    src: prometheus.yml.j2
+    dest: /opt/monitoring/prometheus/prometheus.yml
+    mode: "0644"
+
+- name: Template Grafana datasource provisioning file
+  ansible.builtin.template:
+    src: grafana-datasource.yml.j2
+    dest: /opt/monitoring/grafana/provisioning/datasources/datasource.yml
+    mode: "0644"
+
+- name: Run node_exporter container (host-level metrics - CPU, memory, disk, network)
+  community.docker.docker_container:
+    name: node_exporter
+    image: "quay.io/prometheus/node-exporter:v{{ node_exporter_version }}"
+    state: started
+    restart_policy: always
+    recreate: true
+    network_mode: host
+    pid_mode: host
+    volumes:
+      - "/:/host:ro,rslave"
+    command: "--path.rootfs=/host"
+
+- name: Run Prometheus container
+  community.docker.docker_container:
+    name: prometheus
+    image: "prom/prometheus:{{ prometheus_version }}"
+    state: started
+    restart_policy: always
+    recreate: true
+    network_mode: host
+    volumes:
+      - "/opt/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro"
+
+- name: Run Grafana container
+  community.docker.docker_container:
+    name: grafana
+    image: "grafana/grafana:{{ grafana_version }}"
+    state: started
+    restart_policy: always
+    recreate: true
+    network_mode: host
+    env:
+      GF_SECURITY_ADMIN_PASSWORD: "{{ grafana_admin_password }}"
+    volumes:
+      - "/opt/monitoring/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro"
+      - "grafana-data:/var/lib/grafana"

@@ -1,0 +1,9 @@
+# Copy this to inventory.ini and fill in your actual instance IP.
+# inventory.ini itself is gitignored, since the IP changes every time
+# you destroy/recreate the instance.
+
+[app]
+dev-server ansible_host=REPLACE_WITH_YOUR_IP ansible_user=ubuntu
+
+[app:vars]
+ansible_ssh_private_key_file=~/.ssh/id_ed25519

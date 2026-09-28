@@ -1,0 +1,39 @@
+---
+# Pulls the app image from ECR and runs it as a container.
+#
+# Authentication uses the EC2 instance's own IAM role (attached via the
+# instance profile Terraform set up) — the AWS CLI automatically picks
+# up credentials from instance metadata, no keys stored anywhere on
+# disk. `aws ecr get-login-password` returns a token valid for 12
+# hours, piped straight into `docker login`.
+
+- name: Ensure AWS CLI is installed (needed for ECR auth)
+  ansible.builtin.apt:
+    name: awscli
+    state: present
+    update_cache: true
+
+- name: Log Docker into ECR using the instance's IAM role
+  ansible.builtin.shell: |
+    set -o pipefail
+    aws ecr get-login-password --region {{ aws_region }} | \
+      docker login --username AWS --password-stdin {{ ecr_registry }}
+  args:
+    executable: /bin/bash
+  changed_when: false   # this is an auth step, not a state change worth tracking
+
+- name: Pull app image from ECR
+  community.docker.docker_image:
+    name: "{{ app_image }}"
+    source: pull
+    force_source: true
+
+- name: Run app container
+  community.docker.docker_container:
+    name: "{{ app_container_name }}"
+    image: "{{ app_image }}"
+    state: started
+    restart_policy: always
+    recreate: true
+    published_ports:
+      - "127.0.0.1:{{ app_container_port }}:{{ app_container_port }}"

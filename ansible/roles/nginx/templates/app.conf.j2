@@ -1,0 +1,15 @@
+server {
+    listen 80;
+    server_name {{ nginx_server_name }};
+
+    location / {
+        proxy_pass http://127.0.0.1:{{ app_upstream_port }};
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    location /health {
+        proxy_pass http://127.0.0.1:{{ app_upstream_port }}{{ app_health_path }};
+        access_log off;
+    }
+}

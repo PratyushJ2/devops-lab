@@ -1,0 +1,37 @@
+---
+# Nginx runs on the host and reverse-proxies to the app container.
+#
+# Note: without a handler, this restarts nginx every run regardless of
+# whether the config actually changed. Harmless for a lab (a nginx
+# restart is sub-second and drops zero requests in practice for a
+# single-user project), but a real handler (only restart if the config
+# file changed) is a good "next upgrade" once this is working.
+
+- name: Install nginx
+  ansible.builtin.apt:
+    name: nginx
+    state: present
+    update_cache: true
+
+- name: Remove default nginx site
+  ansible.builtin.file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+
+- name: Template app reverse-proxy site config
+  ansible.builtin.template:
+    src: app.conf.j2
+    dest: /etc/nginx/sites-available/app.conf
+    mode: "0644"
+
+- name: Enable app site
+  ansible.builtin.file:
+    src: /etc/nginx/sites-available/app.conf
+    dest: /etc/nginx/sites-enabled/app.conf
+    state: link
+
+- name: Ensure nginx is enabled and running
+  ansible.builtin.systemd:
+    name: nginx
+    enabled: true
+    state: restarted

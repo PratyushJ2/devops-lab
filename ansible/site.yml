@@ -1,0 +1,13 @@
+---
+# Run with:
+#   ansible-playbook site.yml
+
+- name: Configure and deploy app server
+  hosts: app
+  become: true
+
+  roles:
+    - docker
+    - nginx
+    - app
+    - monitoring
