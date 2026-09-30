@@ -1,0 +1,5 @@
+ssh_allowed_cidr = ""        # your IP — run: curl -s ifconfig.me
+public_key_path  = ""
+github_repo      = ""   # owner/repo, used by the GitHub Actions deploy role
+github_owner_id  = ""    # numeric - see comment in terraform/environments/dev/github_oidc.tf for how to get this
+github_repo_id   = ""   # numeric - see comment in terraform

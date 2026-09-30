@@ -6,9 +6,31 @@
 # fail with "EntityAlreadyExists". In that case, delete the
 # aws_iam_openid_connect_provider block and reference your existing
 # provider's ARN instead.
+#
+# IMMUTABLE SUBJECT CLAIMS: repos created (or renamed/transferred) on
+# GitHub.com after mid-2026 get numeric owner/repo IDs baked into the
+# OIDC token's "sub" claim - e.g. repo:owner@169626619/repo@1393720564
+# instead of the older repo:owner/repo. If your trust policy uses the
+# old name-only format but your repo emits the new one, every workflow
+# run fails with a generic "Not authorized to perform
+# sts:AssumeRoleWithWebIdentity" error that gives no hint this is the
+# cause. Check which format your repo emits at:
+#   https://github.com/<owner>/<repo>/settings/actions/oidc-configuration
+# Get the two numeric IDs with:
+#   curl -s https://api.github.com/repos/OWNER/REPO | python3 -c "import json,sys; d=json.load(sys.stdin); print('owner_id =', d['owner']['id']); print('repo_id  =', d['id'])"
 
 variable "github_repo" {
   description = "Your GitHub repo in owner/name form, e.g. pjoshi/devops-lab. Set in terraform.tfvars."
+  type        = string
+}
+
+variable "github_owner_id" {
+  description = "Numeric GitHub owner/org ID (immutable subject claims). See the comment above for how to get this."
+  type        = string
+}
+
+variable "github_repo_id" {
+  description = "Numeric GitHub repository ID (immutable subject claims). See the comment above for how to get this."
   type        = string
 }
 
@@ -27,16 +49,18 @@ resource "aws_iam_role" "github_deploy" {
   name = "${var.project_name}-${var.environment}-github-deploy"
 
   # Only workflows running on the main branch of YOUR repo can assume this role.
+  # Uses the immutable subject format - see the comment block above the
+  # variables at the top of this file if this ever needs troubleshooting.
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
       Effect    = "Allow"
-      Action    = "sts:AssumeRoleWithWebIdentity"
+      Action    = ["sts:AssumeRoleWithWebIdentity", "sts:TagSession"]
       Principal = { Federated = aws_iam_openid_connect_provider.github.arn }
       Condition = {
         StringEquals = {
           "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
-          "token.actions.githubusercontent.com:sub" = "repo:${var.github_repo}:ref:refs/heads/main"
+          "token.actions.githubusercontent.com:sub" = "repo:${split("/", var.github_repo)[0]}@${var.github_owner_id}/${split("/", var.github_repo)[1]}@${var.github_repo_id}:ref:refs/heads/main"
         }
       }
     }]
